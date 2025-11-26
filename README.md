@@ -51,7 +51,7 @@ docker build -t ai-scraper .
 
 Run the scraper:
 ```bash
-docker run --rm -v $(pwd)/output:/app/output ai-scraper --start-url https://quotes.toscrape.com --output /app/output/docker_output.jsonl
+docker run --rm -v "$(pwd)/output:/app/output" ai-scraper --start-url https://quotes.toscrape.com --output /app/output/docker_output.jsonl
 ```
 
 ---

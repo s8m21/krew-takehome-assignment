@@ -68,18 +68,28 @@ def clean_text(text: str) -> str:
 
 def extract_tags(soup: BeautifulSoup, domain: str) -> List[str]:
     """
-    Simple tag extraction for quotes.toscrape.com style pages:
-    or more generally, look for common 'tag' patterns.
+    For books.toscrape.com, use:
+    - Category from breadcrumb
+    - Star rating as a tag (e.g., 'three-star')
     """
     tags = set()
-    # Example heuristic: links with 'tag' in class or href
-    for a in soup.find_all("a"):
-        classes = " ".join(a.get("class", []))
-        href = a.get("href") or ""
-        txt = a.get_text(strip=True)
-        if "tag" in classes.lower() or "/tag/" in href.lower():
-            if txt:
-                tags.add(txt.lower())
+
+    # Category from breadcrumb
+    breadcrumb = soup.select("ul.breadcrumb li")
+    if len(breadcrumb) >= 3:
+        # last item is current page/category
+        category = breadcrumb[-1].get_text(strip=True)
+        if category and category.lower() not in {"home", "books"}:
+            tags.add(category.lower())
+
+    # Star rating (classes like 'star-rating Three')
+    rating_tag = soup.select_one("p.star-rating")
+    if rating_tag:
+        classes = rating_tag.get("class", [])
+        for cls in classes:
+            if cls.lower() in {"one", "two", "three", "four", "five"}:
+                tags.add(f"{cls.lower()}-star")
+
     return sorted(tags)
 
 

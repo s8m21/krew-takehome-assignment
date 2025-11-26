@@ -28,6 +28,7 @@ def should_skip_url(url: str) -> bool:
     lowered = url.lower()
     skip_patterns = [
         "logout", "login", "signin", "signup", "search",
+        "basket"   # BooksToScrape has a basket/cart page
         "mailto:", "javascript:",
     ]
     if any(p in lowered for p in skip_patterns):
@@ -43,12 +44,12 @@ def should_skip_url(url: str) -> bool:
 def detect_language_simple(text: str) -> str:
     """
     Very simple heuristic: assume English if common English words appear.
-    In production, you’d use a library like langdetect.
+    In production, you'd use a library like langdetect.
     """
     text_lower = text.lower()
     common_words = ["the", "and", "is", "to", "of", "in", "that", "it"]
     hits = sum(1 for w in common_words if w in text_lower)
-    return "en" if hits >= 2 else "unknown"
+    return "en" if hits >= 1 else "unknown"
 
 
 def infer_content_type(url: str, text: str) -> str:
