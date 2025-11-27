@@ -1,7 +1,7 @@
 import logging
 import time
 from collections import deque
-from typing import Dict, Set, List, Optional
+from typing import Dict, Set, List, Optional, Generator
 from urllib.parse import urlparse
 
 import requests
@@ -70,50 +70,52 @@ class SiteCrawler:
             links.append(normalized)
         return links
 
-    def crawl(self) -> List[AIDocument]:
+    def crawl(self) -> Generator[AIDocument, None, None]:
         queue = deque()
         queue.append(self.start_url)
+        self.visited.add(self.start_url)
 
         with tqdm(total=self.max_pages, desc="Crawling pages") as pbar:
             while queue and len(self.docs) < self.max_pages:
                 url = queue.popleft()
-                if url in self.visited:
-                    continue
-                if should_skip_url(url):
-                    continue
-                if not same_domain(url, self.root_domain):
-                    continue
-                if not self._within_allowed_path(url):
-                    continue
-
-                self.visited.add(url)
-
-                html = self._fetch_page(url)
-                if html is None:
-                    continue
-
-                # Build AI document
+                
                 try:
-                    doc = build_ai_document(url, html)
-                    self.docs.append(doc)
-                except Exception as e:
-                    logger.exception("Failed to build document for %s: %s", url, e)
+                    if should_skip_url(url):
+                        continue
+                    if not same_domain(url, self.root_domain):
+                        continue
+                    if not self._within_allowed_path(url):
+                        continue
 
-                # Extract and enqueue links
-                try:
-                    links = self._extract_links(url, html)
-                    for link in links:
-                        if (
-                            link not in self.visited
-                            and same_domain(link, self.root_domain)
-                            and not should_skip_url(link)
-                            and self._within_allowed_path(link)
-                        ):
-                            queue.append(link)
-                except Exception as e:
-                    logger.exception("Failed to extract links from %s: %s", url, e)
+                    html = self._fetch_page(url)
+                    if html is None:
+                        continue
 
-                pbar.update(1)
-                time.sleep(self.delay_seconds)
+                    # Build AI document
+                    try:
+                        doc = build_ai_document(url, html)
+                        self.docs.append(doc)
+                        yield doc
+                    except Exception as e:
+                        logger.exception("Failed to build document for %s: %s", url, e)
 
-        return self.docs
+                    # Extract and enqueue links
+                    try:
+                        links = self._extract_links(url, html)
+                        for link in links:
+                            if (
+                                link not in self.visited
+                                and same_domain(link, self.root_domain)
+                                and not should_skip_url(link)
+                                and self._within_allowed_path(link)
+                            ):
+                                self.visited.add(link)
+                                queue.append(link)
+                    except Exception as e:
+                        logger.exception("Failed to extract links from %s: %s", url, e)
+
+                    pbar.update(1)
+                
+                finally:
+                    # Throttling must happen even if fetch fails
+                    time.sleep(self.delay_seconds)

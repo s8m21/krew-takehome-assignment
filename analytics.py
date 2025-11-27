@@ -5,16 +5,17 @@ Simple analytics for the scraped JSONL output.
 
 import json
 import argparse
+import logging
 from collections import Counter
 from statistics import mean
 from pathlib import Path
 
 
 def load_documents(file_path):
-    """Yield parsed JSON objects from a JSONL file, skipping blank/malformed lines."""
+    """Parsed JSON objects from a JSONL file, skipping blank lines."""
     p = Path(file_path)
     if not p.exists():
-        print(f"Error: File {file_path} not found.")
+        logging.error(f"File {file_path} not found.")
         return
 
     with p.open("r", encoding="utf-8") as f:
@@ -25,8 +26,7 @@ def load_documents(file_path):
             try:
                 yield json.loads(line)
             except json.JSONDecodeError:
-                # In a real system, you'd log this rather than print.
-                print("Warning: Skipping malformed JSON line:", line[:80], "...")
+                logging.warning("Skipping malformed JSON line: %s ...", line[:80])
 
 
 def analyze_output(file_path: str) -> None:
@@ -84,6 +84,12 @@ def main():
         help="Path to the JSONL output file.",
     )
     args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
 
     analyze_output(args.file)
 

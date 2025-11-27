@@ -4,7 +4,14 @@ This project implements a small, production-minded scraping pipeline that collec
 
 ## Site Chosen
 
-For demonstration, the scraper is configured to work well with [https://books.toscrape.com](https://books.toscrape.com), a sandbox site explicitly built for web scraping. The crawler is domain-agnostic and can be pointed at any single domain that allows scraping, but the extraction logic is currently tailored for this site.
+This scraper is configured to work with [https://books.toscrape.com](https://books.toscrape.com), a sandbox site explicitly designed for web scraping practice. This choice allows testing the pipeline without ethical concerns or legal risks.
+
+The site offers the right balance of complexity for demonstrating production-ready scraping. It provides:
+- **Structured metadata** (categories, ratings) that can be extracted as tags—perfect for demonstrating enrichment.
+- **Multiple page types** (listing pages, category pages) that showcase content type inference.
+- **Internal navigation** with breadcrumbs and pagination, which tests the crawler's ability to follow links intelligently.
+
+It's not trivial (like a single static page), but it's also not overwhelming (like a massive e-commerce site). This allows focus on building a clean, maintainable pipeline rather than fighting with anti-bot measures or complex JavaScript rendering.
 
 ---
 
@@ -68,7 +75,7 @@ Each line in the output JSONL file is a valid JSON object representing an "AI Do
 | `body_text` | string | Cleaned main content text. |
 | `word_count` | int | Number of words in body text. |
 | `char_count` | int | Number of characters in body text. |
-| `language` | string | Detected language code (e.g., "en"). |
+| `language` | string | Detected language code (e.g., "en") using `langdetect`. |
 | `content_type` | string | Inferred type (e.g., "article", "tag_page"). |
 | `fetched_at` | string | ISO 8601 timestamp of fetch. |
 | `tags` | list[str] | Extracted tags/keywords (e.g., category, star rating). |
@@ -84,10 +91,11 @@ Each line in the output JSONL file is a valid JSON object representing an "AI Do
 
 ### Crawler
 - **BFS Strategy**: Uses a queue to crawl pages in breadth-first order.
-- **Politeness**: Implements a configurable delay between requests to avoid overwhelming the server.
+- **Politeness**: Implements a configurable delay between requests to avoid overwhelming the server. The delay is enforced even on errors to prevent tight loops.
 - **Domain Restriction**: Strictly stays within the root domain of the start URL.
-- **Deduplication**: Tracks visited URLs to prevent cycles and duplicate processing.
+- **Deduplication**: Tracks visited URLs before adding them to the queue to prevent cycles and duplicate processing.
 - **Filtering**: Skips non-content pages like login, logout, and basket/cart pages.
+- **Memory Efficiency**: Uses a generator pattern to stream documents to disk incrementally, allowing the scraper to handle millions of pages without running out of memory.
 
 ### Content Extraction
 - **Heuristic Extraction**: Prioritizes semantic tags like `<article>` and `<main>`, falling back to the largest text block if necessary.
@@ -96,7 +104,14 @@ Each line in the output JSONL file is a valid JSON object representing an "AI Do
 
 ### Enrichment
 - **Metadata**: Adds useful signals like word count, reading time, and code block detection to help with filtering and ranking.
+- **Language Detection**: Uses the `langdetect` library for accurate, multi-language support (50+ languages) rather than simple heuristics.
 - **Quality Flags**: Explicitly flags documents that might be too short or missing titles, allowing downstream consumers to filter them out easily.
+
+### AI Workflow Support
+The schema is designed to support common AI use cases:
+- **Search/RAG**: `body_text` is clean and ready for embedding. `tags` and `content_type` enable filtering. `quality_flags` help exclude low-quality documents.
+- **Fine-tuning**: `language` and `word_count` allow you to build balanced training sets.
+- **Analytics**: `fetched_at`, `source_domain`, and `reading_time_minutes` enable temporal analysis and content profiling.
 
 ---
 
@@ -107,3 +122,5 @@ Each line in the output JSONL file is a valid JSON object representing an "AI Do
 - **Advanced Content Extraction**: Integrate libraries like `trafilatura` or `readability-lxml` for more robust extraction.
 - **Vector Embeddings**: Compute embeddings (e.g., OpenAI, HuggingFace) during the pipeline and store them alongside the text.
 - **Monitoring**: Add metrics (Prometheus) for crawl rate, error rates, and data quality.
+- **Incremental Updates**: Track previously crawled URLs in a database to support incremental re-crawls and change detection.
+

@@ -108,7 +108,11 @@ class TestUtils(unittest.TestCase):
             detect_language_simple("This is the test of the code."),
             "en",
         )
-        self.assertEqual(detect_language_simple("Hola mundo."), "unknown")
+        # langdetect should identify Spanish
+        self.assertEqual(detect_language_simple("Hola mundo. Esto es una prueba."), "es")
+        
+        # Too short -> unknown
+        self.assertEqual(detect_language_simple("Hi"), "unknown")
 
     def test_infer_content_type(self):
         self.assertEqual(

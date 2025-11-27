@@ -61,17 +61,17 @@ def main():
         allowed_path_prefix=args.allowed_path_prefix,
     )
 
-    docs = crawler.crawl()
-
     out_path = Path(args.output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
+    count = 0
     with out_path.open("w", encoding="utf-8") as f:
-        for doc in docs:
+        for doc in crawler.crawl():
             json_line = json.dumps(doc.to_dict(), ensure_ascii=False)
             f.write(json_line + "\n")
+            count += 1
 
-    logging.info("Wrote %d documents to %s", len(docs), out_path)
+    logging.info("Wrote %d documents to %s", count, out_path)
 
 
 if __name__ == "__main__":
