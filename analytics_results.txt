@@ -1,0 +1,26 @@
+Loading data from output.jsonl...
+
+ Analysis Results:
+Total Documents: 100
+Average Word Count: 172.41
+
+Language Distribution:
+  en: 93 (93.0%)
+  sv: 6 (6.0%)
+  fr: 1 (1.0%)
+
+Content Type Distribution:
+  short_form: 52 (52.0%)
+  article: 48 (48.0%)
+
+Top Tags:
+  one-star: 28
+  five-star: 22
+  three-star: 18
+  two-star: 17
+  four-star: 15
+  travel: 1
+  mystery: 1
+  historical fiction: 1
+  sequential art: 1
+  classics: 1

@@ -49,6 +49,10 @@ python -m unittest discover tests
 python analytics.py output.jsonl
 ```
 
+**Example Outputs:**
+- See [`test_results.txt`](test_results.txt) for example test output (all 9 tests passing).
+- See [`analytics_results.txt`](analytics_results.txt) for example analytics output showing language distribution, content types, and extracted tags.
+
 ### 5. Run with Docker
 
 Build the image:
