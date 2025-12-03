@@ -26,7 +26,7 @@ pip install -r requirements.txt
 ### 2. Run the scraper
 
 ```bash
-python -m scraper.cli --start-url https://books.toscrape.com --max-pages 100 --output output.jsonl
+python -m scraper.cli --start-url https://books.toscrape.com --max-pages 100 --output output.jsonl --concurrency 5
 ```
 
 **Arguments:**
@@ -36,6 +36,8 @@ python -m scraper.cli --start-url https://books.toscrape.com --max-pages 100 --o
 - `--delay`: Delay in seconds between requests (default: 0.5).
 - `--allowed-path-prefix`: Optional path prefix to restrict crawling (e.g., `/docs/`).
 - `--log-level`: Logging level (default: INFO).
+- `--concurrency`: Number of concurrent workers (default: 1).
+- `--ignore-robots`: Ignore `robots.txt` rules (default: False).
 
 ### 3. Run Tests
 
@@ -94,12 +96,15 @@ Each line in the output JSONL file is a valid JSON object representing an "AI Do
 ## Design Decisions
 
 ### Crawler
-- **BFS Strategy**: Uses a queue to crawl pages in breadth-first order.
-- **Politeness**: Implements a configurable delay between requests to avoid overwhelming the server. The delay is enforced even on errors to prevent tight loops.
+- **Concurrency**: Uses `ThreadPoolExecutor` to crawl multiple pages in parallel, significantly improving throughput.
+- **Resilience**: Implements automatic retries with exponential backoff for failed requests (5xx, 429 errors).
+- **Politeness**: 
+    - Respects `robots.txt` rules by default (using `urllib.robotparser`).
+    - Implements a configurable delay between requests to avoid overwhelming the server.
 - **Domain Restriction**: Strictly stays within the root domain of the start URL.
 - **Deduplication**: Tracks visited URLs before adding them to the queue to prevent cycles and duplicate processing.
 - **Filtering**: Skips non-content pages like login, logout, and basket/cart pages.
-- **Memory Efficiency**: Uses a generator pattern to stream documents to disk incrementally, allowing the scraper to handle millions of pages without running out of memory.
+- **Memory Efficiency**: Uses a generator pattern to stream documents to disk incrementally.
 
 ### Content Extraction
 - **Heuristic Extraction**: Prioritizes semantic tags like `<article>` and `<main>`, falling back to the largest text block if necessary.
@@ -122,7 +127,6 @@ The schema is designed to support common AI use cases:
 ## Future Work
 
 - **Distributed Crawling**: Use a task queue (e.g., Celery/Redis) for parallel crawling of large sites.
-- **Respect robots.txt**: Parse and respect `robots.txt` rules.
 - **Advanced Content Extraction**: Integrate libraries like `trafilatura` or `readability-lxml` for more robust extraction.
 - **Vector Embeddings**: Compute embeddings (e.g., OpenAI, HuggingFace) during the pipeline and store them alongside the text.
 - **Monitoring**: Add metrics (Prometheus) for crawl rate, error rates, and data quality.

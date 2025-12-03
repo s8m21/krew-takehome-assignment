@@ -2,9 +2,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
-
 from .crawler import SiteCrawler
-
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -42,6 +40,17 @@ def parse_args():
         default="INFO",
         help="Logging level (DEBUG, INFO, WARNING, ERROR).",
     )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=1,
+        help="Number of concurrent workers (default: 1).",
+    )
+    parser.add_argument(
+        "--ignore-robots",
+        action="store_true",
+        help="Ignore robots.txt rules (default: False).",
+    )
 
     return parser.parse_args()
 
@@ -49,9 +58,16 @@ def parse_args():
 def main():
     args = parse_args()
 
+    # Configure logging with both file and console handlers
+    handlers = [
+        logging.StreamHandler(),
+        logging.FileHandler("scraper.log", encoding="utf-8")
+    ]
+
     logging.basicConfig(
         level=getattr(logging, args.log_level.upper(), logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=handlers
     )
 
     crawler = SiteCrawler(
@@ -59,6 +75,8 @@ def main():
         max_pages=args.max_pages,
         delay_seconds=args.delay,
         allowed_path_prefix=args.allowed_path_prefix,
+        concurrency=args.concurrency,
+        ignore_robots=args.ignore_robots,
     )
 
     out_path = Path(args.output)
@@ -72,7 +90,6 @@ def main():
             count += 1
 
     logging.info("Wrote %d documents to %s", count, out_path)
-
 
 if __name__ == "__main__":
     main()
